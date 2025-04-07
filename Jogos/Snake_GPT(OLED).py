@@ -4,7 +4,7 @@ import neopixel
 import utime
 import random
 
-# --- OLED Display ---
+# --- OLED ---
 i2c = SoftI2C(scl=Pin(15), sda=Pin(14))
 oled = SSD1306_I2C(128, 64, i2c)
 
@@ -14,8 +14,8 @@ y_axis = ADC(Pin(26))
 sw_button = Pin(22, Pin.IN, Pin.PULL_UP)
 
 # --- Botões ---
-pause_button = Pin(5, Pin.IN, Pin.PULL_UP)
-reset_button = Pin(6, Pin.IN, Pin.PULL_UP)
+pause_button = Pin(5, Pin.IN, Pin.PULL_UP)   # Botão A
+speed_button = Pin(6, Pin.IN, Pin.PULL_UP)   # Botão B
 
 # --- Buzzer ---
 buzzer = PWM(Pin(21))
@@ -27,7 +27,7 @@ def beep():
     buzzer.duty_u16(0)
 
 def play_game_over_tone():
-    notas = [196, 174, 155, 146, 130]  # Notas descendentes (tristes)
+    notas = [196, 174, 155, 146, 130]
     for nota in notas:
         buzzer.freq(nota)
         buzzer.duty_u16(20000)
@@ -35,7 +35,15 @@ def play_game_over_tone():
         buzzer.duty_u16(0)
         utime.sleep(0.1)
 
-# --- Matriz de LEDs RGB (NeoPixel 5x5) ---
+def play_restart_tone():
+    notas = [262, 294, 330]
+    for nota in notas:
+        buzzer.freq(nota)
+        buzzer.duty_u16(15000)
+        utime.sleep(0.15)
+    buzzer.duty_u16(0)
+
+# --- NeoPixel Matrix ---
 NUM_LEDS = 25
 np = neopixel.NeoPixel(Pin(7), NUM_LEDS)
 LED_MATRIX = [
@@ -46,19 +54,16 @@ LED_MATRIX = [
     [4, 3, 2, 1, 0]
 ]
 
-# --- Redução de intensidade de LED (5%) ---
-def dim(color, factor=0.05):
+def dim(color, factor=0.03):  # 3% intensidade
     return tuple(int(c * factor) for c in color)
 
-# --- Efeitos Visuais ---
 def effect_food():
     for _ in range(2):
         for i in range(NUM_LEDS):
-            np[i] = dim((0, 255, 0))  # Verde suave
+            np[i] = dim((0, 255, 0))
         np.write()
         utime.sleep(0.1)
-        for i in range(NUM_LEDS):
-            np[i] = (0, 0, 0)
+        np.fill((0, 0, 0))
         np.write()
         utime.sleep(0.1)
 
@@ -68,16 +73,23 @@ def effect_game_over():
             for x in range(5):
                 if x + y == step:
                     led_index = LED_MATRIX[y][x]
-                    np[led_index] = dim((255, 0, 0))  # Vermelho suave
+                    np[led_index] = dim((255, 0, 0))
         np.write()
         utime.sleep(0.1)
-    
     play_game_over_tone()
-    
-    utime.sleep(0.5)
-    for i in range(NUM_LEDS):
-        np[i] = (0, 0, 0)
+    np.fill((0, 0, 0))
     np.write()
+
+def effect_restart():
+    colors = [(255, 255, 0), (0, 255, 255)]
+    for color in colors:
+        for i in range(NUM_LEDS):
+            np[i] = dim(color)
+        np.write()
+        utime.sleep(0.1)
+    np.fill((0, 0, 0))
+    np.write()
+    play_restart_tone()
 
 # --- Jogo ---
 CELL_SIZE = 4
@@ -142,11 +154,8 @@ def update():
 last_move_time = utime.ticks_ms()
 
 while True:
-    if not pause_button.value():
-        paused = not paused
-        utime.sleep(0.3)  # debounce
-
-    if not reset_button.value():
+    # Reiniciar com A + B
+    if not pause_button.value() and not speed_button.value():
         snake = [(WIDTH // 2, HEIGHT // 2)]
         direction = (0, -1)
         food = (random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1))
@@ -155,6 +164,15 @@ while True:
         game_over = False
         np.fill((0, 0, 0))
         np.write()
+        oled.fill(0)
+        oled.text("REINICIADO", 30, 28)
+        oled.show()
+        effect_restart()
+        utime.sleep(0.5)
+
+    # Pausar com Botão A
+    elif not pause_button.value():
+        paused = not paused
         utime.sleep(0.3)
 
     if not paused and not game_over:
@@ -163,9 +181,13 @@ while True:
             direction = new_dir
 
         current_time = utime.ticks_ms()
-        if utime.ticks_diff(current_time, last_move_time) > 200:
+        speed = 150  # velocidade normal
+        if not speed_button.value():
+            speed = 60  # acelerado enquanto B está pressionado
+
+        if utime.ticks_diff(current_time, last_move_time) > speed:
             update()
             last_move_time = current_time
 
     draw()
-    utime.sleep(0.05)
+    utime.sleep(0.01)
