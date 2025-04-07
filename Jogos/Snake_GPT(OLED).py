@@ -105,9 +105,15 @@ CELL_SIZE = 4
 WIDTH = 128 // CELL_SIZE
 HEIGHT = 64 // CELL_SIZE
 
+def new_food_position():
+    while True:
+        pos = (random.randint(0, WIDTH - 1), random.randint(2, HEIGHT - 1))  # evita linha 1
+        if pos not in snake:
+            return pos
+
 snake = [(WIDTH // 2, HEIGHT // 2)]
 direction = (0, -1)
-food = (random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1))
+food = new_food_position()
 score = 0
 paused = False
 game_over = False
@@ -127,10 +133,10 @@ def read_joystick():
 
 def draw():
     oled.fill(0)
+    oled.text(f'Score:{score}', 0, 0)
     oled.fill_rect(food[0]*CELL_SIZE, food[1]*CELL_SIZE, CELL_SIZE, CELL_SIZE, 1)
     for segment in snake:
         oled.fill_rect(segment[0]*CELL_SIZE, segment[1]*CELL_SIZE, CELL_SIZE, CELL_SIZE, 1)
-    oled.text(f'Score:{score}', 0, 0)
     if paused:
         oled.text("PAUSADO", 40, 28)
     elif game_over:
@@ -154,41 +160,38 @@ def update():
         score += 1
         beep()
         effect_food()
-        while food in snake:
-            food = (random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1))
+        food = new_food_position()
     else:
         snake.pop()
 
 # --- Inicialização do jogo ---
-show_controls()
-oled.fill(0)
-oled.text("REINICIADO", 30, 28)
-oled.show()
-effect_restart()
-utime.sleep(0.5)
+def reset_game():
+    global snake, direction, food, score, paused, game_over
+    snake = [(WIDTH // 2, HEIGHT // 2)]
+    direction = (0, -1)
+    food = new_food_position()
+    score = 0
+    paused = False
+    game_over = False
+    np.fill((0, 0, 0))
+    np.write()
+    effect_restart()
+    show_controls()
+    oled.fill(0)
+    oled.text("REINICIADO", 30, 28)
+    oled.show()
+    utime.sleep(0.5)
 
+reset_game()
 last_move_time = utime.ticks_ms()
 
 # --- Loop principal ---
 while True:
     # Reiniciar com A + B
     if not pause_button.value() and not speed_button.value():
-        snake = [(WIDTH // 2, HEIGHT // 2)]
-        direction = (0, -1)
-        food = (random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1))
-        score = 0
-        paused = False
-        game_over = False
-        np.fill((0, 0, 0))
-        np.write()
-        show_controls()
-        oled.fill(0)
-        oled.text("REINICIADO", 30, 28)
-        oled.show()
-        effect_restart()
-        utime.sleep(0.5)
+        reset_game()
 
-    # Pausar com Botão A
+    # Pausar com Botão A (somente se não estiver reiniciando)
     elif not pause_button.value():
         paused = not paused
         utime.sleep(0.3)
