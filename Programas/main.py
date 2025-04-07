@@ -104,6 +104,9 @@ while True:
             executar_programa(caminho_completo)
         utime.sleep(0.3)
 
+
+
+
     # Voltar com botão do joystick (SW)
     if not joystick_button.value():
         if current_path != "/":
