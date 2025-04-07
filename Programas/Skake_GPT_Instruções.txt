@@ -1,0 +1,16 @@
+Mecânica:
+A cobrinha cresce ao comer uma "comida".
+
+O jogo só termina se a cobrinha colidir com ela mesma.
+
+🧩 Controles e extras:
+Joystick analógico: controla a direção.
+
+Botão A (GPIO5): Pausar/Retomar.
+
+Botão B (GPIO6): Reiniciar o jogo.
+
+Buzzer A (GPIO21): Emite som ao comer.
+
+📟 Display OLED:
+Mostra a cobrinha, a comida e o score.
