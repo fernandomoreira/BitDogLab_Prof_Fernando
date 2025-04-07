@@ -8,7 +8,9 @@ Joystick analógico: controla a direção.
 
 Botão A (GPIO5): Pausar/Retomar.
 
-Botão B (GPIO6): Reiniciar o jogo.
+Botão B (GPIO6): Acelerar a cobrinha
+
+Botão A+B: Reiniciar o jogo
 
 Buzzer A (GPIO21): Emite som ao comer.
 

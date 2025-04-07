@@ -91,6 +91,15 @@ def effect_restart():
     np.write()
     play_restart_tone()
 
+def show_controls():
+    oled.fill(0)
+    oled.text("A: Pausar", 0, 0)
+    oled.text("B: Acelerar", 0, 10)
+    oled.text("A+B: Reinicia", 0, 20)
+    oled.text("Joystick: Move", 0, 30)
+    oled.show()
+    utime.sleep(3)
+
 # --- Jogo ---
 CELL_SIZE = 4
 WIDTH = 128 // CELL_SIZE
@@ -150,9 +159,17 @@ def update():
     else:
         snake.pop()
 
-# --- Loop principal ---
+# --- Inicialização do jogo ---
+show_controls()
+oled.fill(0)
+oled.text("REINICIADO", 30, 28)
+oled.show()
+effect_restart()
+utime.sleep(0.5)
+
 last_move_time = utime.ticks_ms()
 
+# --- Loop principal ---
 while True:
     # Reiniciar com A + B
     if not pause_button.value() and not speed_button.value():
@@ -164,6 +181,7 @@ while True:
         game_over = False
         np.fill((0, 0, 0))
         np.write()
+        show_controls()
         oled.fill(0)
         oled.text("REINICIADO", 30, 28)
         oled.show()
